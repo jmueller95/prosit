@@ -5,6 +5,7 @@ import flask
 from flask import after_this_request
 import pandas as pd
 import tensorflow as tf
+import argparse
 
 from . import model
 from . import io_local
@@ -14,7 +15,6 @@ from . import prediction
 from . import alignment
 from . import converters
 
-
 app = flask.Flask(__name__)
 
 
@@ -23,17 +23,17 @@ def hello():
     return "prosit!\n"
 
 
-def predict(csv):
+def predict(csv, nlosses):
     df = pd.read_csv(csv)
-    data = tensorize.csv(df)
-    data = prediction.predict(data, d_spectra)
-    data = prediction.predict(data, d_irt)
+    data = tensorize.csv(df, nlosses)
+    data = prediction.predict(data, d_spectra, nlosses)
+    data = prediction.predict(data, d_irt, nlosses)
     return data
 
 
 @app.route("/predict/generic", methods=["POST"])
 def return_generic():
-    result = predict(flask.request.files["peptides"])
+    result = predict(flask.request.files["peptides"], nlosses=3)
     tmp_f = tempfile.NamedTemporaryFile(delete=True)
     c = converters.generic.Converter(result, tmp_f.name)
     c.convert()
@@ -45,10 +45,9 @@ def return_generic():
 
     return flask.send_file(tmp_f.name)
 
-
 @app.route("/predict/msp", methods=["POST"])
 def return_msp():
-    result = predict(flask.request.files["peptides"])
+    result = predict(flask.request.files["peptides"], nlosses=3)
     tmp_f = tempfile.NamedTemporaryFile(delete=True)
     c = converters.msp.Converter(result, tmp_f.name)
     c.convert()
@@ -60,10 +59,9 @@ def return_msp():
 
     return flask.send_file(tmp_f.name)
 
-
 @app.route("/predict/msms", methods=["POST"])
 def return_msms():
-    result = predict(flask.request.files["peptides"])
+    result = predict(flask.request.files["peptides"], nlosses=3)
     df_pred = converters.maxquant.convert_prediction(result)
     tmp_f = tempfile.NamedTemporaryFile(delete=True)
     converters.maxquant.write(df_pred, tmp_f.name)
@@ -77,6 +75,15 @@ def return_msms():
 
 
 if __name__ == "__main__":
+    ###################################
+    #Edit by JuMu to have Keras allocate memory only when needed
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    #Edit by JuMu to customize the port the server uses
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p" "--port", action="store", dest="port")
+    args = parser.parse_args()
+    ###################################
     warnings.filterwarnings("ignore")
     global d_spectra
     global d_irt
@@ -85,7 +92,7 @@ if __name__ == "__main__":
 
     d_spectra["graph"] = tf.Graph()
     with d_spectra["graph"].as_default():
-        d_spectra["session"] = tf.Session()
+        d_spectra["session"] = tf.Session(config=config)#Edit by JuMu
         with d_spectra["session"].as_default():
             d_spectra["model"], d_spectra["config"] = model.load(
                 constants.MODEL_SPECTRA,
@@ -94,9 +101,9 @@ if __name__ == "__main__":
             d_spectra["model"].compile(optimizer="adam", loss="mse")
     d_irt["graph"] = tf.Graph()
     with d_irt["graph"].as_default():
-        d_irt["session"] = tf.Session()
+        d_irt["session"] = tf.Session(config=config)#Edit by JuMu
         with d_irt["session"].as_default():
             d_irt["model"], d_irt["config"] = model.load(constants.MODEL_IRT,
                     trained=True)
             d_irt["model"].compile(optimizer="adam", loss="mse")
-    app.run(host="0.0.0.0")
+    app.run(host="0.0.0.0", port=args.port)

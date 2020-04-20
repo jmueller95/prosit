@@ -8,7 +8,7 @@ from . import constants
 from . import sanitize
 
 
-def predict(data, d_model):
+def predict(data, d_model, nlosses):
     # check for mandatory keys
     x = io_local.get_array(data, d_model["config"]["x"])
 
@@ -20,7 +20,7 @@ def predict(data, d_model):
 
     if d_model["config"]["prediction_type"] == "intensity":
         data["intensities_pred"] = prediction
-        data = sanitize.prediction(data)
+        data = sanitize.prediction(data, nlosses)
     elif d_model["config"]["prediction_type"] == "iRT":
         scal = float(d_model["config"]["iRT_rescaling_var"])
         mean = float(d_model["config"]["iRT_rescaling_mean"])

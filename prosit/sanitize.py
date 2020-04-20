@@ -4,10 +4,9 @@ from .constants import *
 from . import losses
 
 
-def reshape_dims(array):
+def reshape_dims(array, nlosses):
     n, dims = array.shape
-    assert dims == 174
-    nlosses = 1
+    assert dims == 174*nlosses
     return array.reshape(
         [array.shape[0], MAX_SEQUENCE - 1, len(ION_TYPES), nlosses, MAX_FRAG_CHARGE]
     )
@@ -21,28 +20,31 @@ def reshape_flat(array):
 
 def normalize_base_peak(array):
     # flat
+    res = array.copy()
     maxima = array.max(axis=1)
-    array = array / maxima[:, numpy.newaxis]
-    return array
+    res = array / maxima[:, numpy.newaxis]
+    return res
 
 
 def mask_outofrange(array, lengths, mask=-1.0):
     # dim
+    res = array.copy()
     for i in range(array.shape[0]):
-        array[i, lengths[i] - 1 :, :, :, :] = mask
-    return array
+        res[i, lengths[i] - 1 :, :, :, :] = mask
+    return res
 
 
-def cap(array, nlosses=1, z=3):
+def cap(array, nlosses=3, z=3):
     return array[:, :, :, :nlosses, :z]
 
 
 def mask_outofcharge(array, charges, mask=-1.0):
     # dim
+    res = array.copy()
     for i in range(array.shape[0]):
         if charges[i] < 3:
-            array[i, :, :, :, charges[i] :] = mask
-    return array
+            res[i, :, :, :, charges[i] :] = mask
+    return res
 
 
 def get_spectral_angle(true, pred, batch_size=600):
@@ -72,7 +74,7 @@ def get_spectral_angle(true, pred, batch_size=600):
     return sa
 
 
-def prediction(data, batch_size=600):
+def prediction(data, nlosses, batch_size=600):
     assert "sequence_integer" in data
     assert "intensities_pred" in data
     assert "precursor_charge_onehot" in data
@@ -83,7 +85,7 @@ def prediction(data, batch_size=600):
 
     intensities[intensities < 0] = 0
     intensities = normalize_base_peak(intensities)
-    intensities = reshape_dims(intensities)
+    intensities = reshape_dims(intensities, nlosses)
     intensities = mask_outofrange(intensities, sequence_lengths)
     intensities = mask_outofcharge(intensities, charges)
     intensities = reshape_flat(intensities)

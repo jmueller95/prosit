@@ -17,8 +17,9 @@ def generate_aa_comp():
     aa_comp = dict(pyteomics.mass.std_aa_comp)
     s = db.by_title("Oxidation")["composition"]
     aa_comp["Z"] = aa_comp["M"] + s
-    s = db.by_title("Carbamidomethyl")["composition"]
-    aa_comp["C"] = aa_comp["C"] + s
+    #Commented out by JuMu
+    #s = db.by_title("Carbamidomethyl")["composition"] 
+    #aa_comp["C"] = aa_comp["C"] + s
     return aa_comp
 
 
@@ -62,7 +63,8 @@ def generate_mods_string_tuples(sequence_integer):
     for mod in [ox_int, c_int]:
         for position in np.where(sequence_integer == mod)[0]:
             if mod == c_int:
-                list_mods.append((position, "C", "Carbamidomethyl"))
+                pass #Commented out by JuMu
+                #list_mods.append((position, "C", "Carbamidomethyl"))
             elif mod == ox_int:
                 list_mods.append((position, "M", "Oxidation"))
             else:
@@ -109,7 +111,7 @@ class Converter():
         self.data = data
 
     def convert(self):
-        IONS = get_ions().reshape(174, -1).flatten()
+        IONS = get_ions().reshape(data["masses_pred"].size, -1).flatten()
         with open(self.out_path, mode="w", encoding="utf-8") as f:
             first_spec = True
             for i in range(self.data["iRT"].shape[0]):

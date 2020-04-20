@@ -68,9 +68,9 @@ def convert_prediction(tensor):
     assert "intensities_pred" in tensor
     assert "sequence_integer" in tensor
     assert "precursor_charge_onehot" in tensor
-    intensities_pred = utils.reshape_dims(tensor["intensities_pred"])
+    intensities_pred = utils.reshape_dims(tensor["intensities_pred"], nlosses=len(tensor["intensities_pred"][0])//3)
     modified_sequences = utils.sequence_integer_to_str(tensor["sequence_integer"])
-    natural_losses_max = 0
+    natural_losses_max = 0 #TODO: Maybe set this to 2
 
     def convert_row(i):
         modified_sequence = modified_sequences[i]
