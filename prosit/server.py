@@ -32,8 +32,8 @@ def predict(csv, nlosses):
     start = time.time()
     data = prediction.predict(data, d_spectra, nlosses)
     print("Predict MSMS: {:.3f}".format(time.time() - start))
-    data = prediction.predict(data, d_irt, nlosses)
     start = time.time()
+    data = prediction.predict(data, d_irt, nlosses)
     print("Predict iRT: {:.3f}".format(time.time() - start))
 
     return data
@@ -43,9 +43,7 @@ def predict(csv, nlosses):
 def return_mgf():
     result = predict(flask.request.files["peptides"], nlosses=3)
     tmp_f = tempfile.NamedTemporaryFile(delete=True)
-    start = time.time()
     c = converters.mgf.Converter(result, tmp_f.name)
-    print("Create MGF Converter: {:.3f}".format(time.time() - start))
     c.convert()
 
     @after_this_request
