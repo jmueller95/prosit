@@ -39,6 +39,23 @@ def predict(csv, nlosses):
     return data
 
 
+@app.route("/predict/mgf", methods=["POST"])
+def return_mgf():
+    result = predict(flask.request.files["peptides"], nlosses=3)
+    tmp_f = tempfile.NamedTemporaryFile(delete=True)
+    start = time.time()
+    c = converters.mgf.Converter(result, tmp_f.name)
+    print("Create MGF Converter: {:.3f}".format(time.time() - start))
+    c.convert()
+
+    @after_this_request
+    def cleanup(response):
+        tmp_f.close()
+        return response
+
+    return flask.send_file(tmp_f.name)
+
+
 @app.route("/predict/generic", methods=["POST"])
 def return_generic():
     result = predict(flask.request.files["peptides"], nlosses=3)
