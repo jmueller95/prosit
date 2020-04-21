@@ -3,6 +3,7 @@ from .. import utils
 from math import inf
 import time
 import pyteomics.mass
+import numpy as np
 
 aa_comp = dict(pyteomics.mass.std_aa_comp)
 aa_comp["o"] = pyteomics.mass.Composition({"O": 1})
@@ -44,15 +45,15 @@ class Converter:
         min_mz, max_mz = inf, -inf 
         start = time.time()
         for i in range(len(self.data["iRT"])):
-            spectrum = Spectrum(data["sequence_integer"][i], 
-                data["masses_pred"][i], 
-                data["intensities_pred"][i], 
-                data["collision_energy_aligned_normed"][i], 
-                data["iRT"][i],
-                data["precursor_charge_onehot"][i])
+            spectrum = Spectrum(self.data["sequence_integer"][i], 
+                self.data["masses_pred"][i], 
+                self.data["intensities_pred"][i], 
+                self.data["collision_energy_aligned_normed"][i], 
+                self.data["iRT"][i],
+                self.data["precursor_charge_onehot"][i])
             spectra.append(spectrum)
-            min_mz = min(min_mz, spectrum.masses_pred[self.intensities_pred!=0].min())
-            max_mz = max(max_mz, spectrum.masses_pred[self.intensities_pred!=0].max())
+            min_mz = min(min_mz, spectrum.masses_pred[spectrum.intensities_pred!=0].min())
+            max_mz = max(max_mz, spectrum.masses_pred[spectrum.intensities_pred!=0].max())
         print("Spectrum list generated: {:.3f}".format(time.time() - start))
         start = time.time()
         with open(self.out_path, "w") as outfile:
@@ -92,11 +93,11 @@ END IONS\n'''.format(
     self.precursor_charge,
     self.precursor_mz,
     self.precursor_charge,
-    self.irt,
+    self.iRT,
     "\n".join(peak_list))
         return res            
 
-def find_modifications(mod_sequence):
+def find_modifications(peptide):
     res=""
     pos = peptide.find("M(")
     while pos != -1:
