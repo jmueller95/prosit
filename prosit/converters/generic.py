@@ -6,6 +6,7 @@ import pyteomics.mass
 from ..constants import MAX_ION, ION_TYPES, MAX_FRAG_CHARGE, NLOSSES
 from .. import utils
 
+import time
 
 aa_comp = dict(pyteomics.mass.std_aa_comp)
 aa_comp["o"] = pyteomics.mass.Composition({"O": 1})
@@ -83,9 +84,12 @@ class Converter:
         io_process = mp.Process(target=self.to_csv)
         io_process.daemon = True
         io_process.start()
+        print("Running convert() with {} processes".format(self.cores*2))
+        start = time.time()
         with mp.Pool(processes=self.cores * 2) as pool:
             self.fill_queue(pool)
         io_process.join()
+        print("convert(): {:.3f}".format(time.time() - start))
 
     def convert_spectrum(self, data):
         df = pd.DataFrame(

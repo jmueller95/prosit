@@ -1,3 +1,4 @@
+import time
 import os
 import tempfile
 import warnings
@@ -25,9 +26,16 @@ def hello():
 
 def predict(csv, nlosses):
     df = pd.read_csv(csv)
+    start = time.time()
     data = tensorize.csv(df, nlosses)
+    print("Tensorize Input DF: {:.3f}".format(time.time() - start))
+    start = time.time()
     data = prediction.predict(data, d_spectra, nlosses)
+    print("Predict MSMS: {:.3f}".format(time.time() - start))
     data = prediction.predict(data, d_irt, nlosses)
+    start = time.time()
+    print("Predict iRT: {:.3f}".format(time.time() - start))
+
     return data
 
 
@@ -35,7 +43,9 @@ def predict(csv, nlosses):
 def return_generic():
     result = predict(flask.request.files["peptides"], nlosses=3)
     tmp_f = tempfile.NamedTemporaryFile(delete=True)
+    start = time.time()
     c = converters.generic.Converter(result, tmp_f.name)
+    print("Create Generic Converter: {:.3f}".format(time.time() - start))
     c.convert()
 
     @after_this_request
