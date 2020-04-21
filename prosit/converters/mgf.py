@@ -52,8 +52,8 @@ class Converter:
                 self.data["iRT"][i],
                 self.data["precursor_charge_onehot"][i])
             spectra.append(spectrum)
-            min_mz = min(min_mz, spectrum.masses_pred[spectrum.intensities_pred!=0].min())
-            max_mz = max(max_mz, spectrum.masses_pred[spectrum.intensities_pred!=0].max())
+            min_mz = min(min_mz, spectrum.masses_pred[spectrum.intensities_pred>0].min())
+            max_mz = max(max_mz, spectrum.masses_pred[spectrum.intensities_pred>0].max())
         print("Spectrum list generated: {:.3f}".format(time.time() - start))
         start = time.time()
         with open(self.out_path, "w") as outfile:
@@ -76,16 +76,17 @@ class Spectrum(object):
     
     def to_mgf(self, ion_list):
         assert len(self.masses_pred) == len(self.intensities_pred) == len(ion_list)
+        ion_mask = np.round(self.intensities_pred,7) > 0
         peak_list = ["{:.6f} {:.6f} {}".format(mz, rel_int, ion_string)
         for mz, rel_int, ion_string in zip(
-            self.masses_pred[self.intensities_pred!=0],
-            self.intensities_pred[self.intensities_pred!=0],
-            ion_list[self.intensities_pred!=0])]
+            self.masses_pred[ion_mask],
+            self.intensities_pred[ion_mask],
+            ion_list[ion_mask])]
         res = "BEGIN IONS\nTITLE={}|{}|{}\nPEPMASS={:.6f}\nCHARGE={}\nIRT={:.6f}\n{}\nEND IONS\n".format(
             self.sequence,
             self.modifications,
             self.precursor_charge,
-            self.precursor_mz,
+            calc_mass(self.precursor_mz, self.precursor_charge),
             self.precursor_charge,
             self.iRT,
             "\n".join(peak_list))
@@ -98,3 +99,7 @@ def find_modifications(peptide):
         peptide = peptide[:peptide.find("(")] + peptide[peptide.find(")")+1:]
         pos = peptide.find("M(")
     return peptide, res
+
+HYDROGEN_MASS = 1.00784
+def calc_mass(mz, charge):
+    return mz*charge - (charge*HYDROGEN_MASS)
