@@ -69,8 +69,8 @@ class Spectrum(object):
         self.precursor_mz = pyteomics.mass.calculate_mass(
             sequence=mod_sequence.replace("M(ox)", "oM"), charge=self.precursor_charge, aa_comp=aa_comp)
         self.sequence, self.modifications = find_modifications(mod_sequence)
-        self.ce = collision_energy_aligned_normed #This is not yet printed anywhere, maybe someday
-        self.iRT = iRT
+        self.ce = collision_energy_aligned_normed[0] #This is not yet printed anywhere, maybe someday
+        self.iRT = iRT[0]
         self.masses_pred = masses_pred
         self.intensities_pred = intensities_pred
     
@@ -81,22 +81,15 @@ class Spectrum(object):
             self.masses_pred[self.intensities_pred!=0],
             self.intensities_pred[self.intensities_pred!=0],
             ion_list[self.intensities_pred!=0])]
-        res = '''BEGIN IONS
-TITLE={}|{}|{}
-PEPMASS={:.6f}
-CHARGE={}
-IRT={:.6f}
-{}
-END IONS\n'''.format(
-    self.sequence,
-    self.modifications,
-    self.precursor_charge,
-    self.precursor_mz,
-    self.precursor_charge,
-    self.iRT,
-    "\n".join(peak_list))
-        return res            
-
+        res = "BEGIN IONS\nTITLE={}|{}|{}\nPEPMASS={:.6f}\nCHARGE={}\nIRT={:.6f}\n{}\nEND IONS\n".format(
+            self.sequence,
+            self.modifications,
+            self.precursor_charge,
+            self.precursor_mz,
+            self.precursor_charge,
+            self.iRT,
+            "\n".join(peak_list))
+        return res
 def find_modifications(peptide):
     res=""
     pos = peptide.find("M(")
