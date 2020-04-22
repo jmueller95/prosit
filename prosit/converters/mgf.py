@@ -54,7 +54,7 @@ class Converter:
                 self.ion_list)
             spectra.append(spectrum)
             mzlist = spectrum.masses_pred[spectrum.masses_pred!=-1]
-            if bool(mzlist):
+            if mzlist.size==0:
                 min_mz = min(min_mz, mzlist.min())
                 max_mz = max(max_mz, mzlist.max())
         print("Spectrum list generated: {:.3f}".format(time.time() - start))
