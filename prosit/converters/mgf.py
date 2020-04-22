@@ -50,20 +50,21 @@ class Converter:
                 self.data["intensities_pred"][i], 
                 self.data["collision_energy_aligned_normed"][i], 
                 self.data["iRT"][i],
-                self.data["precursor_charge_onehot"][i])
+                self.data["precursor_charge_onehot"][i],
+                self.ion_list)
             spectra.append(spectrum)
-            min_mz = min(min_mz, spectrum.masses_pred[spectrum.intensities_pred>0].min())
-            max_mz = max(max_mz, spectrum.masses_pred[spectrum.intensities_pred>0].max())
+            min_mz = min(min_mz, spectrum.masses_pred[spectrum.masses_pred!=-1].min())
+            max_mz = max(max_mz, spectrum.masses_pred.max())
         print("Spectrum list generated: {:.3f}".format(time.time() - start))
         start = time.time()
         with open(self.out_path, "w") as outfile:
             outfile.write("MIN_MZ={:.6f}\nMAX_MZ={:.6f}\n".format(min_mz, max_mz))
             for spectrum in spectra:
-                outfile.write(spectrum.to_mgf(self.ion_list) + "\n")
+                outfile.write(spectrum.to_mgf() + "\n")
         print("MGF file written: {:.3f}".format(time.time() - start))
 
 class Spectrum(object):
-    def __init__(self, sequence_integer, masses_pred, intensities_pred, collision_energy_aligned_normed, iRT, precursor_charge_onehot):
+    def __init__(self, sequence_integer, masses_pred, intensities_pred, collision_energy_aligned_normed, iRT, precursor_charge_onehot, ion_list):
         mod_sequence = utils.get_sequence(sequence_integer)
         self.precursor_charge = int(precursor_charge_onehot.argmax() + 1)
         self.precursor_mz = pyteomics.mass.calculate_mass(
@@ -71,17 +72,17 @@ class Spectrum(object):
         self.sequence, self.modifications = find_modifications(mod_sequence)
         self.ce = collision_energy_aligned_normed[0] #This is not yet printed anywhere, maybe someday
         self.iRT = iRT[0]
-        self.masses_pred = masses_pred
-        self.intensities_pred = intensities_pred
+        ion_mask = np.round(intensities_pred,7) > 0
+        self.masses_pred = masses_pred[ion_mask]
+        self.intensities_pred = intensities_pred[ion_mask]
+        self.ion_list = ion_list[ion_mask]
     
-    def to_mgf(self, ion_list):
-        assert len(self.masses_pred) == len(self.intensities_pred) == len(ion_list)
-        ion_mask = np.round(self.intensities_pred,7) > 0
+    def to_mgf(self):
         peak_list = ["{:.6f} {:.6f} {}".format(mz, rel_int, ion_string)
         for mz, rel_int, ion_string in zip(
-            self.masses_pred[ion_mask],
-            self.intensities_pred[ion_mask],
-            ion_list[ion_mask])]
+            self.masses_pred,
+            self.intensities_pred,
+            self.ion_list)]
         res = "BEGIN IONS\nTITLE={}|{}|{}\nPEPMASS={:.6f}\nCHARGE={}\nIRT={:.6f}\n{}\nEND IONS\n".format(
             self.sequence,
             self.modifications,
