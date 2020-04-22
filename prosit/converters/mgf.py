@@ -53,8 +53,10 @@ class Converter:
                 self.data["precursor_charge_onehot"][i],
                 self.ion_list)
             spectra.append(spectrum)
-            min_mz = min(min_mz, spectrum.masses_pred[spectrum.masses_pred!=-1].min())
-            max_mz = max(max_mz, spectrum.masses_pred.max())
+            mzlist = spectrum.masses_pred[spectrum.masses_pred!=-1]
+            if mzlist:
+                min_mz = min(min_mz, mzlist.min())
+                max_mz = max(max_mz, mzlist.max())
         print("Spectrum list generated: {:.3f}".format(time.time() - start))
         start = time.time()
         with open(self.out_path, "w") as outfile:
