@@ -16,8 +16,6 @@ for is_trained in [True, False]:
 	iRT_model_dir = "/root/training/IMA_uRT/"
 	iRT_model, iRT_config = model_lib.load(iRT_model_dir, trained=is_trained)
 	iRT_callbacks = training.get_callbacks(iRT_model_dir)
-	iRT_raw_mean = training_df.uRT.mean()
-	iRT_raw_var = training_df.uRT.var()
 	
 
 	print("iRT Model Loaded (with{} weights).".format("" if is_trained else "out"))
@@ -35,6 +33,8 @@ for is_trained in [True, False]:
 	###Prepare df for training
 	training_tensorized = tensorize.csv(training_df[['modified_sequence', 'collision_energy', 'precursor_charge']], nlosses=3)
 	print("CSV Tensorized.")
+	iRT_raw_mean = training_df.uRT.mean()
+	iRT_raw_var = training_df.uRT.var()
 	training_tensorized['prediction'] = np.reshape(
 		np.asarray((training_df.uRT - iRT_raw_mean) / np.sqrt(iRT_raw_var)),(-1,1))
 
