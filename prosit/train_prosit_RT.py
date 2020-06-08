@@ -13,8 +13,6 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 #Load both training files at once and concatenate (for iRT, the fragmentation method does not matter so we can use both)
 training_data_paths =  ["/root/training/IM_HCD_25_27_train_1_preprocessed.csv", "/root/training/IM_CID_35_train_1_preprocessed.csv"]
 training_dfs = [pd.read_csv(path) for path in training_data_paths]
-#DEBUG: Only use first 100 peptides
-training_dfs = [df.iloc[:100] for df in training_dfs]
 training_df = pd.concat(training_dfs)
 
 ###Dump all Peptides containing selenocystein
@@ -35,7 +33,7 @@ io_local.to_hdf5(training_tensorized,hdf5_path)
 print("Training Data Written to HDF5 File.")
 #Load the hdf5 again
 training_loaded = io_local.from_hdf5(hdf5_path)
-print("Training Data Reloaded from HDF5 File.\nCommencing Training of iRT Model (with{} weights).".format("" if is_trained else "out"))
+print("Training Data Reloaded from HDF5 File.\nCommencing Training of iRT Models (with and without pretrained weights.")
 
 #The whole thing is run twice: Once with an untrained model and once with the pretrain model (to see if transfer learning is useful here)
 for is_trained in [True, False]:
