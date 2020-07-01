@@ -146,3 +146,12 @@ def csv(df, nlosses):
     data["masses_pred"] = masses_pred
 
     return data
+
+def csv_only_seq(df):
+    """This method is used in case only RT is predicted - the RT Model only needs the sequence""" 
+    df.reset_index(drop=True, inplace=True)
+    assert "modified_sequence" in df.columns
+    data = {
+        "sequence_integer": get_sequence_integer(df.modified_sequence)
+    }
+    return data

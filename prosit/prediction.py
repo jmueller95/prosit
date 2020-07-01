@@ -8,7 +8,7 @@ from . import constants
 from . import sanitize
 
 
-def predict(data, d_model, nlosses):
+def predict(data, d_model, nlosses=None):
     # check for mandatory keys
     x = io_local.get_array(data, d_model["config"]["x"])
 

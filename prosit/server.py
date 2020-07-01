@@ -39,11 +39,30 @@ def predict(df, nlosses):
 
     return data
 
+def predict_RT(df):
+    data = tensorize.csv_only_seq(df)
+    data = prediction.predict(data, d_irt)
+    return data
+
+@app.route("/predict/rt", methods=["POST"])
+def return_rt():
+    df = pd.read_csv(flask.request.files['peptides'])
+    result = predict_RT(df)
+    tmp_f = tempfile.NamedTemporaryFile(delete=True)
+    c = converters.rtlist.Converter(result, tmp_f.name)
+    c.convert()
+
+    @after_this_request
+    def cleanup(response):
+        tmp_f.close()
+        return response
+
+    return flask.send_file(tmp_f.name)
 
 @app.route("/predict/speclib", methods=["POST"])
 def return_speclib():
     df = pd.read_csv(flask.request.files['peptides'])
-    result = predict( df, nlosses=3)
+    result = predict(df, nlosses=3)
     peptides_filename = ".".join(flask.request.files["peptides"].filename.split("/")[-1].split(".")[:-1])
     zipdata = io.BytesIO()
     with zipfile.ZipFile(zipdata, 'w', zipfile.ZIP_DEFLATED) as zipf:
