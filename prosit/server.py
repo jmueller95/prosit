@@ -7,6 +7,7 @@ from flask import after_this_request
 import pandas as pd
 import tensorflow as tf
 import argparse
+import zipfile
 
 from . import model
 from . import io_local
@@ -38,6 +39,30 @@ def predict(csv, nlosses):
 
     return data
 
+
+@app.route("/predict/speclib", methods=["POST"])
+def return_speclib():
+    result = predict(, nlosses=3)
+    peptides_filename = ".".join(flask.request.files["peptides"].split("/")[-1].split(".")[:-1])
+    with zipfile.ZipFile('TempOutput.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
+        with open("{}.mgf".format(peptides_filename), "w") as mgf_file:
+            c_mgf = converters.mgf.Converter(result, mgf_file)
+            c_mgf.convert(as_speclib=True)
+            zipf.write(mgf_file)
+        with open("{}.ssl".format(peptides_filename), "w")  as ssl_file:
+            #SSL only needs the input data, not the predictions
+            c_ssl = converters.ssl.Converter(flask.request.files["peptides"], ssl_file)
+            c_ssl.convert()
+            zipf.write(ssl_file)
+
+    @after_this_request
+    def cleanup(response):
+        os.remove(zipf.filename)
+        os.remove("{}.mgf".format(peptides_filename))
+        os.remove("{}.ssl".format(peptides_filename))
+        return response
+
+    return flask.send_file(zipf.filename)
 
 @app.route("/predict/mgf", methods=["POST"])
 def return_mgf():

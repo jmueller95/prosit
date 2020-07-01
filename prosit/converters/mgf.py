@@ -40,12 +40,15 @@ class Converter:
         return(np.asarray(["{}{}{}+{}".format(fragtype, fragnumber, fragnl if fragnl == '' else '-{}'.format(fragnl), fragcharge) 
             for fragtype, fragnumber, fragnl, fragcharge in zip(FragmentType, FragmentNumber, FragmentNeutralLoss, FragmentCharge)]))
 
-    def convert(self):
+    def convert(self, as_speclib=False):
+        """If as_speclib is set to True, the Title of each spectrum will only contain the scan number 
+        """
         spectra = []
         min_mz, max_mz = inf, -inf 
         start = time.time()
         for i in range(len(self.data["iRT"])):
-            spectrum = Spectrum(self.data["sequence_integer"][i], 
+            spectrum = Spectrum(i,
+                self.data["sequence_integer"][i], 
                 self.data["masses_pred"][i], 
                 self.data["intensities_pred"][i], 
                 self.data["collision_energy_aligned_normed"][i], 
@@ -62,12 +65,13 @@ class Converter:
         with open(self.out_path, "w") as outfile:
             outfile.write("MIN_MZ={:.6f}\nMAX_MZ={:.6f}\n".format(min_mz, max_mz))
             for spectrum in spectra:
-                outfile.write(spectrum.to_mgf() + "\n")
+                outfile.write(spectrum.to_mgf(as_speclib) + "\n")
         print("MGF file written: {:.3f}".format(time.time() - start))
 
 class Spectrum(object):
-    def __init__(self, sequence_integer, masses_pred, intensities_pred, collision_energy_aligned_normed, iRT, precursor_charge_onehot, ion_list):
+    def __init__(self, index, sequence_integer, masses_pred, intensities_pred, collision_energy_aligned_normed, iRT, precursor_charge_onehot, ion_list):
         mod_sequence = utils.get_sequence(sequence_integer)
+        self.index = index
         self.precursor_charge = int(precursor_charge_onehot.argmax() + 1)
         self.precursor_mz = pyteomics.mass.calculate_mass(
             sequence=mod_sequence.replace("M(ox)", "oM"), charge=self.precursor_charge, aa_comp=aa_comp)
@@ -79,21 +83,20 @@ class Spectrum(object):
         self.intensities_pred = intensities_pred[ion_mask]
         self.ion_list = ion_list[ion_mask]
     
-    def to_mgf(self):
+    def to_mgf(self, as_speclib):
         peak_list = ["{:.6f} {:.6f} {}".format(mz, rel_int, ion_string)
         for mz, rel_int, ion_string in zip(
             self.masses_pred,
             self.intensities_pred,
             self.ion_list)]
-        res = "BEGIN IONS\nTITLE={}|{}|{}\nPEPMASS={:.6f}\nCHARGE={}\nIRT={:.6f}\n{}\nEND IONS\n".format(
-            self.sequence,
-            self.modifications,
-            self.precursor_charge,
+        res = "BEGIN IONS\nTITLE={}\nPEPMASS={:.6f}\nCHARGE={}\nIRT={:.6f}\n{}\nEND IONS\n".format(
+            self.index if as_speclib else "{}|{}|{}".format(self.sequence,self.modifications,self.precursor_charge),
             calc_mass(self.precursor_mz, self.precursor_charge),
             self.precursor_charge,
             self.iRT,
             "\n".join(peak_list))
         return res
+        
 def find_modifications(peptide):
     res=""
     pos = peptide.find("M(")
