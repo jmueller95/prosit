@@ -8,6 +8,7 @@ import pandas as pd
 import tensorflow as tf
 import argparse
 import zipfile
+import io
 
 from . import model
 from . import io_local
@@ -25,8 +26,7 @@ def hello():
     return "prosit!\n"
 
 
-def predict(csv, nlosses):
-    df = pd.read_csv(csv)
+def predict(df, nlosses):
     start = time.time()
     data = tensorize.csv(df, nlosses)
     print("Tensorize Input DF: {:.3f}".format(time.time() - start))
@@ -42,31 +42,33 @@ def predict(csv, nlosses):
 
 @app.route("/predict/speclib", methods=["POST"])
 def return_speclib():
-    result = predict(, nlosses=3)
-    peptides_filename = ".".join(flask.request.files["peptides"].split("/")[-1].split(".")[:-1])
-    with zipfile.ZipFile('TempOutput.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
-        with open("{}.mgf".format(peptides_filename), "w") as mgf_file:
-            c_mgf = converters.mgf.Converter(result, mgf_file)
-            c_mgf.convert(as_speclib=True)
-            zipf.write(mgf_file)
-        with open("{}.ssl".format(peptides_filename), "w")  as ssl_file:
-            #SSL only needs the input data, not the predictions
-            c_ssl = converters.ssl.Converter(flask.request.files["peptides"], ssl_file)
-            c_ssl.convert()
-            zipf.write(ssl_file)
-
+    df = pd.read_csv(flask.request.files['peptides'])
+    result = predict( df, nlosses=3)
+    peptides_filename = ".".join(flask.request.files["peptides"].filename.split("/")[-1].split(".")[:-1])
+    zipdata = io.BytesIO()
+    with zipfile.ZipFile(zipdata, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        mgf_file = "{}.mgf".format(peptides_filename)
+        c_mgf = converters.mgf.Converter(result, mgf_file)
+        c_mgf.convert(as_speclib=True)
+        zipf.write(mgf_file)
+        #SSL only needs the input data, not the predictions
+        ssl_file = "{}.ssl".format(peptides_filename)
+        c_ssl = converters.ssl.Converter(df, ssl_file)
+        c_ssl.convert()
+        zipf.write(ssl_file)
     @after_this_request
     def cleanup(response):
-        os.remove(zipf.filename)
         os.remove("{}.mgf".format(peptides_filename))
         os.remove("{}.ssl".format(peptides_filename))
         return response
+    zipdata.seek(0)
+    return flask.send_file(zipdata, mimetype='zip')
 
-    return flask.send_file(zipf.filename)
 
 @app.route("/predict/mgf", methods=["POST"])
 def return_mgf():
-    result = predict(flask.request.files["peptides"], nlosses=3)
+    df = pd.read_csv(flask.request.files['peptides'])
+    result = predict(df, nlosses=3)
     tmp_f = tempfile.NamedTemporaryFile(delete=True)
     c = converters.mgf.Converter(result, tmp_f.name)
     c.convert()
@@ -81,7 +83,8 @@ def return_mgf():
 
 @app.route("/predict/generic", methods=["POST"])
 def return_generic():
-    result = predict(flask.request.files["peptides"], nlosses=3)
+    df = pd.read_csv(flask.request.files['peptides'])
+    result = predict(df, nlosses=3)
     tmp_f = tempfile.NamedTemporaryFile(delete=True)
     start = time.time()
     c = converters.generic.Converter(result, tmp_f.name)
@@ -97,7 +100,9 @@ def return_generic():
 
 @app.route("/predict/msp", methods=["POST"])
 def return_msp():
-    result = predict(flask.request.files["peptides"], nlosses=3)
+    #Not Implemented for IMAProsit!
+    df = pd.read_csv(flask.request.files['peptides'])
+    result = predict(df, nlosses=3)
     tmp_f = tempfile.NamedTemporaryFile(delete=True)
     c = converters.msp.Converter(result, tmp_f.name)
     c.convert()
@@ -111,7 +116,9 @@ def return_msp():
 
 @app.route("/predict/msms", methods=["POST"])
 def return_msms():
-    result = predict(flask.request.files["peptides"], nlosses=3)
+    #Not Implemented for IMAProsit!
+    df = pd.read_csv(flask.request.files['peptides'])
+    result = predict(df, nlosses=3)
     df_pred = converters.maxquant.convert_prediction(result)
     tmp_f = tempfile.NamedTemporaryFile(delete=True)
     converters.maxquant.write(df_pred, tmp_f.name)

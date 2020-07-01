@@ -11,7 +11,7 @@ class Converter:
 		res = pd.DataFrame({
 			"file":"{}.mgf".format(".".join(self.out_path.split("/")[-1].split(".")[:-1])),
 			"scan": range(len(self.data)),
-			"charge": self.data['precursor_charge']
+			"charge": self.data['precursor_charge'],
 			"sequence": self.data['modified_sequence'].apply(lambda seq: seq.replace("M(ox)", "M[+16.0]"))
 			})
-		res.to_csv(out_path, sep="\t", header=True, index=False)
+		res[['file', 'scan', 'charge', 'sequence']].to_csv(self.out_path, sep="\t", header=True, index=False)
