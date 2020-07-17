@@ -39,10 +39,12 @@ def predict(df, nlosses):
 
     return data
 
+
 def predict_RT(df):
     data = tensorize.csv_only_seq(df)
     data = prediction.predict(data, d_irt)
     return data
+
 
 @app.route("/predict/rt", methods=["POST"])
 def return_rt():
@@ -59,6 +61,7 @@ def return_rt():
 
     return flask.send_file(tmp_f.name)
 
+
 @app.route("/predict/speclib", methods=["POST"])
 def return_speclib():
     df = pd.read_csv(flask.request.files['peptides'])
@@ -70,16 +73,18 @@ def return_speclib():
         c_mgf = converters.mgf.Converter(result, mgf_file)
         c_mgf.convert(as_speclib=True)
         zipf.write(mgf_file)
-        #SSL only needs the input data, not the predictions
+        # SSL only needs the input data, not the predictions
         ssl_file = "{}.ssl".format(peptides_filename)
         c_ssl = converters.ssl.Converter(df, ssl_file)
         c_ssl.convert()
         zipf.write(ssl_file)
+
     @after_this_request
     def cleanup(response):
         os.remove("{}.mgf".format(peptides_filename))
         os.remove("{}.ssl".format(peptides_filename))
         return response
+
     zipdata.seek(0)
     return flask.send_file(zipdata, mimetype='zip')
 
@@ -105,9 +110,7 @@ def return_generic():
     df = pd.read_csv(flask.request.files['peptides'])
     result = predict(df, nlosses=3)
     tmp_f = tempfile.NamedTemporaryFile(delete=True)
-    start = time.time()
     c = converters.generic.Converter(result, tmp_f.name)
-    print("Create Generic Converter: {:.3f}".format(time.time() - start))
     c.convert()
 
     @after_this_request
@@ -117,9 +120,10 @@ def return_generic():
 
     return flask.send_file(tmp_f.name)
 
+
 @app.route("/predict/msp", methods=["POST"])
 def return_msp():
-    #Not Implemented for IMAProsit!
+    # MSP Output is not implemented yet for this fork of Prosit (needs to be extended for neutral losses) !
     df = pd.read_csv(flask.request.files['peptides'])
     result = predict(df, nlosses=3)
     tmp_f = tempfile.NamedTemporaryFile(delete=True)
@@ -133,9 +137,10 @@ def return_msp():
 
     return flask.send_file(tmp_f.name)
 
+
 @app.route("/predict/msms", methods=["POST"])
 def return_msms():
-    #Not Implemented for IMAProsit!
+    # MSMS Output is not implemented for this fork of Prosit (needs to be extended for neutral losses) !
     df = pd.read_csv(flask.request.files['peptides'])
     result = predict(df, nlosses=3)
     df_pred = converters.maxquant.convert_prediction(result)
@@ -152,10 +157,10 @@ def return_msms():
 
 if __name__ == "__main__":
     ###################################
-    #Have Keras allocate memory only when needed
+    # Have Keras allocate memory only when needed
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    #Edit by JuMu to customize the port the server uses
+    #This allows the user to customize the port the server uses
     parser = argparse.ArgumentParser()
     parser.add_argument("-p" "--port", action="store", dest="port")
     args = parser.parse_args()
@@ -168,7 +173,7 @@ if __name__ == "__main__":
 
     d_spectra["graph"] = tf.Graph()
     with d_spectra["graph"].as_default():
-        d_spectra["session"] = tf.Session(config=config)#Edit by JuMu
+        d_spectra["session"] = tf.Session(config=config)
         with d_spectra["session"].as_default():
             d_spectra["model"], d_spectra["config"] = model.load(
                 constants.MODEL_SPECTRA,
@@ -177,9 +182,9 @@ if __name__ == "__main__":
             d_spectra["model"].compile(optimizer="adam", loss="mse")
     d_irt["graph"] = tf.Graph()
     with d_irt["graph"].as_default():
-        d_irt["session"] = tf.Session(config=config)#Edit by JuMu
+        d_irt["session"] = tf.Session(config=config)
         with d_irt["session"].as_default():
             d_irt["model"], d_irt["config"] = model.load(constants.MODEL_IRT,
-                    trained=True)
+                                                         trained=True)
             d_irt["model"].compile(optimizer="adam", loss="mse")
     app.run(host="0.0.0.0", port=args.port)
