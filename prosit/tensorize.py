@@ -1,13 +1,10 @@
 import collections
 import numpy as np
-import time
-from . import constants
 from . import utils
 from . import match
 from . import annotate
 from . import sanitize
 from .constants import (
-    CHARGES,
     MAX_SEQUENCE,
     ALPHABET,
     MAX_ION,
@@ -63,27 +60,21 @@ def parse_ion(string):
     return ion_type, int(ion_n) - 1, NLOSSES.index(suffix)
 
 
-def get_mz_applied(df, timedict, ion_types="yb"):
+def get_mz_applied(df, ion_types="yb"):
     ito = {it: ION_OFFSET[it] for it in ion_types}
 
-    def calc_row(row, timedict):
+    def calc_row(row):
         array = np.zeros([MAX_ION, len(ION_TYPES), len(NLOSSES), len(CHARGES)])
-        start = time.time()
         fw, bw = match.get_forward_backward(row.modified_sequence)
-        timedict["FW/BW"] += time.time()-start
         for z in range(row.precursor_charge):
             zpp = z + 1
-            start = time.time()
             annotation = annotate.get_annotation(fw, bw, zpp, ito)
-            timedict["Annotation"] += time.time() - start
             for ion, mz in annotation.items():
-                start = time.time()
                 it, _in, nloss = parse_ion(ion)
-                timedict["Parse Ion"] += time.time() - start
                 array[_in, it, nloss, z] = mz
         return [array]
 
-    mzs_series = df.apply(lambda row: calc_row(row, timedict), 1)
+    mzs_series = df.apply(lambda row: calc_row(row), 1)
     out = np.squeeze(np.stack(mzs_series))
     if len(out.shape) == 4:
         out = out.reshape([1] + list(out.shape))
@@ -99,33 +90,22 @@ def csv(df, nlosses):
         "collision_energy_aligned_normed": get_numbers(df.collision_energy) / 100.0,
         "sequence_integer": get_sequence_integer(df.modified_sequence),
         "precursor_charge_onehot": get_precursor_charge_onehot(df.precursor_charge),
-        #"masses_pred": get_mz_applied(df),
+        # "masses_pred": get_mz_applied(df),
     }
     z = 3
     lengths = (data["sequence_integer"] > 0).sum(1)
-    timedict = {"FW/BW":0, "Annotation":0, "Parse Ion":0}
-    masses_pred = get_mz_applied(df,timedict)
-    print("FW/BW: {:.3f}".format(timedict["FW/BW"]))
-    print("Annotation: {:.3f}".format(timedict["Annotation"]))
-    print("Parse Ion: {:.3f}".format(timedict["Parse Ion"]))
-    start = time.time()
+    masses_pred = get_mz_applied(df)
     masses_pred = sanitize.cap(masses_pred, nlosses, z)
-    print("Cap: {:.3f}".format(time.time() - start))
-    start = time.time()
     masses_pred = sanitize.mask_outofrange(masses_pred, lengths)
-    print("Mask Out Of Range: {:.3f}".format(time.time() - start))
-    start = time.time()
     masses_pred = sanitize.mask_outofcharge(masses_pred, df.precursor_charge)
-    print("Mask Out Of Charge: {:.3f}".format(time.time() - start))
-    start = time.time()
     masses_pred = sanitize.reshape_flat(masses_pred)
-    print("Reshape Flat: {:.3f}".format(time.time() - start))
     data["masses_pred"] = masses_pred
 
     return data
 
+
 def csv_only_seq(df):
-    """This method is used in case only RT is predicted - the RT Model only needs the sequence""" 
+    """This method is used in case only RT is predicted - the RT Model only needs the sequence"""
     df.reset_index(drop=True, inplace=True)
     assert "modified_sequence" in df.columns
     data = {

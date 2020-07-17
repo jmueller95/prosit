@@ -6,12 +6,10 @@ import pyteomics.mass
 from ..constants import MAX_ION, ION_TYPES, MAX_FRAG_CHARGE, NLOSSES
 from .. import utils
 
-import time
-
 aa_comp = dict(pyteomics.mass.std_aa_comp)
 aa_comp["o"] = pyteomics.mass.Composition({"O": 1})
 #translate2spectronaut = {"C": "C[Carbamidomethyl (C)]", "M(ox)": "M[Oxidation (M)]"}
-translate2spectronaut = {"M(ox)": "M[Oxidation (M)]"}#Edited by JuMu
+translate2spectronaut = {"M(ox)": "M[Oxidation (M)]"}
 
 class Converter:
     def __init__(self, data, out_path, maxsize=256, batch_size=32):
@@ -85,11 +83,9 @@ class Converter:
         io_process.daemon = True
         io_process.start()
         print("Running convert() with {} processes".format(self.cores*2))
-        start = time.time()
         with mp.Pool(processes=self.cores * 2) as pool:
             self.fill_queue(pool)
         io_process.join()
-        print("convert(): {:.3f}".format(time.time() - start))
 
     def convert_spectrum(self, data):
         df = pd.DataFrame(
