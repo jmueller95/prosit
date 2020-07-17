@@ -21,9 +21,8 @@ def get_callbacks(model_dir_path):
     #return [save, stop, decay]
 
 
-def IMA_compile_model(model, model_config):
-    import keras
-    #Edit by JuMu to have Keras allocate memory only when needed
+def compile_model(model, model_config):
+    #Have Keras allocate memory only when needed
     from keras.backend.tensorflow_backend import set_session
     import tensorflow as tf
     config = tf.ConfigProto()
@@ -40,7 +39,7 @@ def IMA_compile_model(model, model_config):
     optimizer = model_config["optimizer"]
     model.compile(optimizer=optimizer, loss=loss)
 
-def IMA_train(tensor, model, model_config, callbacks):
+def train_model(tensor, model, model_config, callbacks):
     x = io_local.get_array(tensor, model_config["x"])
     y = io_local.get_array(tensor, model_config["y"])
     history = model.fit(
@@ -55,32 +54,9 @@ def IMA_train(tensor, model, model_config, callbacks):
 
 def train(tensor, model, model_config, callbacks):
     import keras
-    #Edit by JuMu to have Keras allocate memory only when needed
-    from keras.backend.tensorflow_backend import set_session
     import tensorflow as tf
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    sess = tf.Session(config=config)
-    set_session(sess)
-    #Initialize all weights to avoid an error during training 
-    sess.run(tf.global_variables_initializer())
-
-    if isinstance(model_config["loss"], list):
-        loss = [losses.get(l) for l in model_config["loss"]]
-    else:
-        loss = losses.get(model_config["loss"])
-    optimizer = model_config["optimizer"]
-    x = io_local.get_array(tensor, model_config["x"])
-    y = io_local.get_array(tensor, model_config["y"])
-    model.compile(optimizer=optimizer, loss=loss)
-    model.fit(
-        x=x,
-        y=y,
-        epochs=constants.TRAIN_EPOCHS,
-        batch_size=constants.TRAIN_BATCH_SIZE,
-        validation_split=1 - constants.VAL_SPLIT,
-        callbacks=callbacks,
-    )
+    compile_model(model, model_config)
+    train_model(tensor, model, model_config, callbacks)
     keras.backend.get_session().close()
 
 

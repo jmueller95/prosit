@@ -89,29 +89,6 @@ def get_mz_applied(df, timedict, ion_types="yb"):
         out = out.reshape([1] + list(out.shape))
     return out
 
-def my_get_mz_applied(df, ion_types="yb"):
-    ito = {it: ION_OFFSET[it] for it in ion_types}
-
-    def calc_row(row):
-        array = np.zeros([MAX_ION, len(ION_TYPES), len(NLOSSES), len(CHARGES)])
-        ions = np.empty([MAX_ION, len(ION_TYPES), len(NLOSSES), len(CHARGES)], dtype='object')
-
-        fw, bw = match.get_forward_backward(row.modified_sequence)
-        for z in range(row.precursor_charge):
-            zpp = z + 1
-            annotation = annotate.get_annotation(fw, bw, zpp, ito)
-            for ion, mz in annotation.items():
-                it, _in, nloss = parse_ion(ion)
-                array[_in, it, nloss, z] = mz
-                ions[_in, it, nloss, z] = ion + "+" + str(zpp)
-        return ([array],[ions])
-
-    mzs_series = df.apply(calc_row, 1)
-    out = np.squeeze(np.stack(mzs_series))
-    if len(out.shape) == 4:
-        out = out.reshape([1] + list(out.shape))
-    return out
-
 
 def csv(df, nlosses):
     df.reset_index(drop=True, inplace=True)

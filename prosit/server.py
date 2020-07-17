@@ -152,7 +152,7 @@ def return_msms():
 
 if __name__ == "__main__":
     ###################################
-    #Edit by JuMu to have Keras allocate memory only when needed
+    #Have Keras allocate memory only when needed
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     #Edit by JuMu to customize the port the server uses

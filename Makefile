@@ -34,15 +34,3 @@ train: build
 	    -v "$(TRAIN_DIR)":/root/training/ \
 	    -e CUDA_VISIBLE_DEVICES=$(GPU) \
 	    $(IMAGE) python3 -m prosit.train_prosit
-
-train_RT_IleLeu: build
-	$(DOCKER) run -it \
-            -v "$(TRAIN_DIR)":/root/training/ \
-            -e CUDA_VISIBLE_DEVICES=$(GPU) \
-            $(IMAGE) python3 -m prosit.train_prosit_RT_IleLeu
-
-train_RT: build
-	$(DOCKER) run -it \
-	    -v "$(TRAIN_DIR)":/root/training/ \
-	    -e CUDA_VISIBLE_DEVICES=$(GPU) \
-	    $(IMAGE) python3 -m prosit.train_prosit_RT
