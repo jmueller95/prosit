@@ -1,0 +1,4 @@
+file	scan	charge	sequence
+peptidelist.mgf	0	3	MMPAAALIM[+16.0]R
+peptidelist.mgf	1	2	MLAPPPIM[+16.0]K
+peptidelist.mgf	2	6	MRALLLIPPPPM[+16.0]R
