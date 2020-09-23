@@ -1,10 +1,6 @@
-DATA ?= $(HOME)/data.hdf5
-MODEL_SPECTRA ?= $(HOME)/model_sectra/
-MODEL_IRT ?= $(HOME)/model_irt/
 OUT_FOLDER ?= $(MODEL)
 HOSTPORT ?= 5001
-GPU ?= 0
-DOCKER = nvidia-docker
+DOCKER = docker
 IMAGE = prosit
 DOCKERFILE = Dockerfile
 
@@ -15,19 +11,13 @@ build:
 
 server: build
 	$(DOCKER) run -it \
-	    -v "$(MODEL_SPECTRA)":/root/model_spectra/ \
-	    -v "$(MODEL_IRT)":/root/model_irt/ \
-	    -e CUDA_VISIBLE_DEVICES=$(GPU) \
+	    -v "$(MODEL_CONFIG_SPECTRA)":/root/model_config_spectra/ \
+	    -v "$(MODEL_CONFIG_RT)":/root/model_config_rt/ \
+	    -v "$(WEIGHTS_CID)":/root/weights_cid/ \
+	    -v "$(WEIGHTS_HCD)":/root/weights_hcd/ \
+	    -v "$(WEIGHTS_RT)":/root/weights_rt/ \
 	    -p $(HOSTPORT):$(HOSTPORT) \
 	    $(IMAGE) python3 -m prosit.server -p $(HOSTPORT)
-
-jump: build
-	$(DOCKER) run -it \
-	    -v "$(MODEL_SPECTRA)":/root/model_spectra/ \
-	    -v "$(MODEL_IRT)":/root/model_irt/ \
-	    -v "$(DATA)":/root/data.hdf5 \
-	    -e CUDA_VISIBLE_DEVICES=$(GPU) \
-	    $(IMAGE) bash
 
 train: build
 	$(DOCKER) run -it \

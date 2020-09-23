@@ -1,0 +1,11 @@
+iRT_rescaling_mean: 53.23018264130349
+iRT_rescaling_var: 275.54545624604225
+loss: mse
+name: mox_neat_attention_context
+optimizer: adam
+prediction_out: iRT_pred
+prediction_type: iRT
+x:
+- sequence_integer
+y:
+- prediction

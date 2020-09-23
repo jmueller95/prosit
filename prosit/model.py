@@ -28,12 +28,12 @@ def get_best_weights_path(model_dir):
         return weights_path
 
 
-def load(model_dir, trained=False):
+def load(model_config_dir, weights_dir, trained=False):
     import keras
 
-    model_path = os.path.join(model_dir, MODEL_NAME)
-    config_path = os.path.join(model_dir, CONFIG_NAME)
-    weights_path = get_best_weights_path(model_dir)
+    model_path = os.path.join(model_config_dir, MODEL_NAME)
+    config_path = os.path.join(model_config_dir, CONFIG_NAME)
+    weights_path = get_best_weights_path(weights_dir)
     with open(config_path, "r") as f:
         config = yaml.load(f)
     with open(model_path, "r") as f:

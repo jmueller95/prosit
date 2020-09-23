@@ -1,6 +1,8 @@
-DATA_PATH = "/root/data.hdf5"
-MODEL_SPECTRA = "/root/model_spectra/"
-MODEL_IRT = "/root/model_irt/"
+MODEL_CONFIG_SPECTRA= "/root/model_config_spectra/"
+MODEL_CONFIG_RT= "/root/model_config_rt/"
+WEIGHTS_CID= "/root/weights_cid/"
+WEIGHTS_HCD= "/root/weights_hcd/"
+WEIGHTS_RT= "/root/weights_rt/"
 OUT_DIR = "/root/prediction/"
 
 VAL_SPLIT = 0.8
