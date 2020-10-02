@@ -68,9 +68,9 @@ def convert_prediction(tensor):
     assert "intensities_pred" in tensor
     assert "sequence_integer" in tensor
     assert "precursor_charge_onehot" in tensor
-    intensities_pred = utils.reshape_dims(tensor["intensities_pred"], nlosses=len(tensor["intensities_pred"][0])//3)
+    intensities_pred = utils.reshape_dims(tensor["intensities_pred"], nlosses=len(tensor["intensities_pred"][0])//174)
     modified_sequences = utils.sequence_integer_to_str(tensor["sequence_integer"])
-    natural_losses_max = 0 #TODO: Maybe set this to 2
+    natural_losses_max = 2
 
     def convert_row(i):
         modified_sequence = modified_sequences[i]
@@ -82,17 +82,19 @@ def convert_prediction(tensor):
             ann = annotate.get_annotation(fw, bw, fz + 1, "yb")
             for fty_i, fty in enumerate(constants.ION_TYPES):
                 for fi in range(constants.MAX_ION):
-                    ion = fty + str(fi + 1)
-                    inte = intensities_pred[i, fi, fty_i, natural_losses_max, fz]
-                    if inte > 0:
-                        mz = ann[ion]
-                        if fz > 0:
-                            ion += "({}+)".format(fz + 1)
-                        mzs.append(mz)
-                        ions.append(ion)
-                        intes.append(inte)
-                    else:
-                        continue
+                    for nl_i, nl in enumerate(constants.NLOSSES):
+                        #ion = fty + str(fi + 1) #e.g. b1 - todo: Additionally iterate over ["", "NH3", "H2O"] (NLOSSES) and add it to ion names
+                        ion = "{}{}{}{}".format(fty, fi+1, "-" if nl != "" else "", nl)
+                        inte = intensities_pred[i, fi, fty_i, nl_i, fz]
+                        if inte > 0:
+                            mz = ann[ion]
+                            if fz > 0:
+                                ion += "({}+)".format(fz + 1)
+                            mzs.append(mz)
+                            ions.append(ion)
+                            intes.append(inte)
+                        else:
+                            continue
 
         mzs_s = ";".join(map(str, mzs))
         matches_s = ";".join(ions)

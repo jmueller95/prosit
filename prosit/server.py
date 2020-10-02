@@ -61,7 +61,6 @@ def run_prosit(output_format=None, fragmentation_mode=None):
             c = converters.msp.Converter(result, tmp_f.name)
         c.convert()
     elif output_format == "msms":
-        print("Warning: msms output is not yet implemented!")
         df_pred = converters.maxquant.convert_prediction(result)
         tmp_f = tempfile.NamedTemporaryFile(delete=True)
         converters.maxquant.write(df_pred, tmp_f.name)
